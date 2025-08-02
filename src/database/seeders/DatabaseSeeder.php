@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\SpreadSheet;
+use App\Models\SpreadSheetData;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -13,11 +15,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $listNumbers = fake()->numberBetween(1, 4);
+        $columnsNumbers = fake()->numberBetween(3, 7);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            SpreadSheetSeeder::class,
+            RowSeeder::class,
         ]);
     }
 }

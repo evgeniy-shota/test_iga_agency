@@ -15,10 +15,12 @@ class SpreadSheet extends Model
     /** @use HasFactory<\Database\Factories\SpreadSheetFactory> */
     use HasFactory;
 
+    protected $table = 'spread_sheets';
     protected $fillable = [
         'user_id',
         'url',
         'sheets',
+        'current_sheet',
     ];
 
     public function user(): BelongsTo

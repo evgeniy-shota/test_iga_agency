@@ -3,21 +3,21 @@
 namespace App\Models;
 
 use App\Enums\SpreadSheetLineStatus;
-use DateTimeInterface;
-use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class SpreadSheetData extends Model
+class Row extends Model
 {
-    /** @use HasFactory<\Database\Factories\SpreadSheetDataFactory> */
+    /** @use HasFactory<\Database\Factories\RowFactory> */
     use HasFactory;
 
-    protected $table = 'spread_sheet_data';
+    protected $table = 'rows';
     protected $fillable = [
         'spread_sheets_id',
+        'user_id',
         'status',
         'columns',
     ];
@@ -26,11 +26,6 @@ class SpreadSheetData extends Model
     {
         return $this->belongsTo('spread_sheets');
     }
-
-    // protected function serializeDate(DateTimeInterface $date): string
-    // {
-    //     return $date->format('d-m-Y');
-    // }
 
     protected function casts(): array
     {

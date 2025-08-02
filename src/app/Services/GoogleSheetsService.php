@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Actions\AddMissingValuesToRow;
+use App\Actions\GetColumnsNames;
 use Error;
 use Exception;
 use Google\Client;
@@ -31,7 +33,12 @@ class GoogleSheetsService
      */
     public function getSpreadsheet(string $spreadsheetId)
     {
-        $this->spreadsheet = $this->service->spreadsheets->get($spreadsheetId);
+        try {
+            $this->spreadsheet = $this->service->spreadsheets->get($spreadsheetId);
+        } catch (Exception $e) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -41,7 +48,6 @@ class GoogleSheetsService
     public function getSpreadsheetValues(string $spreadsheetId, string $range)
     {
         $this->spreadsheetValues = $this->service->spreadsheets_values->get($spreadsheetId, $range);
-        dump($this->spreadsheetValues);
     }
 
     /**
@@ -66,7 +72,44 @@ class GoogleSheetsService
 
     public function spreadsheetValues()
     {
-        return $this->spreadsheetValues ?? null;
+        if (!isset($this->spreadsheetValues)) {
+            return null;
+        }
+
+        $range = $this->spreadsheetValues->range;
+        $values = [];
+        $size = count($this->spreadsheetValues->values);
+        $maxCols = count($this->spreadsheetValues->values[0]);
+
+        for ($i = 1; $i < $size; $i++) {
+            $countValues = count($this->spreadsheetValues->values[$i]);
+
+            if ($countValues > $maxCols) {
+                $maxCols = $countValues;
+            }
+        }
+
+        $columnsName = GetColumnsNames::get($maxCols);
+
+        for ($i = 1; $i < $size; $i++) {
+            $countCurrentRow = count($this->spreadsheetValues->values[$i]);
+
+            $values[] = array_combine(
+                $columnsName,
+                $countCurrentRow < count($columnsName)
+                    ? AddMissingValuesToRow::add(
+                        $this->spreadsheetValues->values[$i],
+                        count($columnsName)
+                    )
+                    : $this->spreadsheetValues->values[$i],
+            );
+        }
+
+        return ([
+            'range' => $range,
+            'columns' => $columnsName,
+            'values' => $values,
+        ]);
     }
 
     /**
@@ -74,7 +117,17 @@ class GoogleSheetsService
      */
     public function sheets(): ?array
     {
-        return $this->sheets ?? null;
+        if (!isset($this->sheets)) {
+            return null;
+        }
+
+        $sheets = [];
+
+        foreach ($this->sheets as $sheet) {
+            $sheets[$sheet['properties']->title] = $sheet['properties']->sheetId;
+        }
+
+        return $sheets;
     }
 
     /**
@@ -94,5 +147,16 @@ class GoogleSheetsService
         }
 
         return null;
+    }
+
+    public function checkSheetTitleExists(string $title)
+    {
+        for ($i = 0, $size = count($this->sheets); $i < $size; $i++) {
+            if ($this->sheets[$i]['properties']->title === $title) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
