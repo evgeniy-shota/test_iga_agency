@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Requests;
+namespace App\Http\Requests\Row;
 
-use App\Rules\GoogleSpreadsheetUrl;
+use App\Enums\SpreadSheetRowStatus;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class SpreadSheetRequest extends FormRequest
+class CreateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,9 +24,11 @@ class SpreadSheetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'url' => ['sometimes', 'url:https,http', new GoogleSpreadsheetUrl],
-            'spreadsheet' => ['integer', 'numeric'],
-            'sheet' => ['string', 'nullable'],
+            'sheet_id' => ['integer', 'numeric'],
+            'status' => [Rule::in(SpreadSheetRowStatus::getValues())],
+            'name' => ['nullable', 'string'],
+            'reserved_count' => ['nullable', 'integer', 'numeric'],
+            'total_count' => ['nullable', 'integer', 'numeric'],
         ];
     }
 }

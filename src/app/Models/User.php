@@ -4,6 +4,8 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -34,9 +36,9 @@ class User extends Authenticatable
         'remember_token',
     ];
 
-    public function spreadSheet(): HasOne
+    public function spreadsheets(): BelongsToMany
     {
-        return $this->hasOne('spread_sheets');
+        return $this->belongsToMany(SpreadSheet::class)->orderByPivot('updated_at','desc');
     }
 
     /**

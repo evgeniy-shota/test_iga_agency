@@ -5,7 +5,7 @@ namespace App\Actions;
 class ValidateGoogleSpreadsheetUrl
 {
 
-    private const REGEX = '^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w]+\/edit\?((usp=sharing)|(gid=[\w]+#gid=[\w]+))^';
+    private const REGEX = '^https:\/\/docs\.google\.com\/spreadsheets\/d\/[\w\d_-]+\/edit\?((usp=sharing)|(gid=[\w]+#gid=[\w]+))^';
 
     public static function validate(string $url)
     {

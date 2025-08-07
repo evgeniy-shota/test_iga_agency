@@ -14,10 +14,9 @@ return new class extends Migration
     {
         Schema::create('spread_sheets', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+            $table->string('spreadsheet_id')->index();
+            $table->string('title');
             $table->string('url');
-            $table->json('sheets')->nullable();
-            $table->string('current_sheet')->nullable();
             $table->string('range')->nullable();
             $table->timestamps();
         });

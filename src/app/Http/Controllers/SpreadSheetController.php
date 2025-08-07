@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Actions\GetColumnsNames;
+use App\Http\Requests\SpreadSheet\CreateRequest;
+use App\Http\Requests\SpreadSheet\UpdateRequest;
 use App\Http\Requests\SpreadSheetRequest;
 use App\Models\SpreadSheet;
 use App\Services\GoogleSpreadsheetWorkerService;
@@ -22,14 +24,33 @@ class SpreadSheetController extends Controller
         return SpreadSheet::where('id', $id)->first();
     }
 
-    public function create(SpreadSheetRequest $request)
+    public function create(CreateRequest $request)
     {
         $validated = $request->validated();
-        dump($this->spreadSheetService->createSpreadSheet($validated, Auth::id()));
-        dd();
+        $spreadsheet = $this->spreadSheetService->createSpreadSheet($validated, Auth::id());
+
+        if (!$spreadsheet) {
+            return redirect()->back()
+                ->with(
+                    'error',
+                    'Something went wrong...The table may not be available.'
+                );
+        }
+
+        return redirect(route('dashboard.show', $spreadsheet->id));
     }
 
-    public function update(Request $request, int $id) {}
+    public function update(UpdateRequest $request, int $id)
+    {
+        $validated = $request->validated();
+        $spreadsheet = $this->spreadSheetService->updateSpreadSheet($id, $validated['url'], $validated['sheet'],  Auth::id());
 
-    public function destroy(Request $request, int $id) {}
+        return redirect(route('dashboard.show', $spreadsheet->id));
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $this->spreadSheetService->delete($id);
+        return redirect(route('dashboard'));
+    }
 }

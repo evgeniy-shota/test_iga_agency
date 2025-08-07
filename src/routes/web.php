@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FetchCommandController;
 use App\Http\Controllers\RowController;
 use App\Http\Controllers\SpreadSheetController;
 use Illuminate\Support\Facades\Route;
@@ -11,8 +12,10 @@ Route::get('/', function () {
 })->name('home');
 
 Route::controller(DashboardController::class)->group(function () {
-    Route::get('/dashboard', 'index')->middleware(['auth', 'verified'])
+    Route::get('/dashboard', 'index')->middleware(['auth'])
         ->name('dashboard');
+    Route::get('/dashboard/{id}', 'show')->middleware(['auth'])
+        ->name('dashboard.show');
 });
 
 // Route::get('dashboard', function () {
@@ -31,14 +34,26 @@ Route::controller(SpreadSheetController::class)->group(function () {
 });
 
 Route::controller(RowController::class)->group(function () {
-    Route::get('/rows', 'index')->name('rows.index');
-    Route::get('/rows/{id}', 'show')->whereNumber('id')
-        ->name('rows.show');
-    Route::post('/rows', 'create')->name('rows.create');
-    Route::put('/rows/{id}', 'update')->whereNumber('id')
-        ->name('rows.update');
-    Route::delete('/rows/{id}', 'destroy')->whereNumber('id')
-        ->name('rows.delete');
+    Route::get('/rows/', 'index')->middleware(['auth'])
+        ->name('rows.index');
+    Route::get('/rows/{id}', 'show')->middleware(['auth'])
+        ->whereNumber('id')->name('rows.show');
+    Route::post('/rows/add-multiple-rows/{sheetId}', 'addMultipleRows')
+        ->middleware(['auth'])
+        ->name('rows.addmultiplerows');
+    Route::post('/rows', 'create')->middleware(['auth'])
+        ->name('rows.create');
+    Route::put('/rows/{id}', 'update')->middleware(['auth'])
+        ->whereNumber('id')->name('rows.update');
+    Route::delete('/rows/delete-all-rows/{sheetId}', 'deleteAllRows')
+        ->middleware(['auth'])->name('rows.deleteallrows');
+    Route::delete('/rows/{id}', 'destroy')->middleware(['auth'])
+        ->whereNumber('id')->name('rows.delete');
+});
+
+Route::controller(FetchCommandController::class)->group(function () {
+    Route::get('/fetch/{count?}', 'getSpreadsheetCommand')->whereNumber('count')
+        ->middleware(['auth'])->name('fetch.getspreadsheet');
 });
 
 require __DIR__ . '/settings.php';

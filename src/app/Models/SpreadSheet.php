@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class SpreadSheet extends Model
@@ -17,19 +19,29 @@ class SpreadSheet extends Model
 
     protected $table = 'spread_sheets';
     protected $fillable = [
-        'user_id',
+        'spreadsheet_id',
         'url',
-        'sheets',
-        'current_sheet',
+        'range',
+        'title',
     ];
 
-    public function user(): BelongsTo
+    public function users(): BelongsToMany
     {
-        return $this->belongsTo('users');
+        return $this->belongsToMany(User::class)->orderByPivot('updated_at','desc');
     }
 
-    public function sheetData(): HasOne
+    public function sheets(): HasMany
     {
-        return $this->hasOne('spread_sheet_data');
+        return $this->hasMany(Sheet::class, 'spread_sheet_id');
+    }
+
+    public function observedSpreadsheet(): HasOne
+    {
+        return $this->hasOne(SpreadsheetUnderObservation::class, 'spread_sheet_id');
+    }
+
+    public function spreadsheetActions(): HasMany
+    {
+        return $this->hasMany(SpreadSheetAction::class);
     }
 }

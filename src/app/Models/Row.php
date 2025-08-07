@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\SpreadSheetLineStatus;
+use App\Enums\SpreadSheetRowStatus;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,22 +16,25 @@ class Row extends Model
 
     protected $table = 'rows';
     protected $fillable = [
-        'spread_sheets_id',
-        'user_id',
+        'spread_sheet_id',
+        'sheet_id',
+        'row_number',
         'status',
-        'columns',
+        'name',
+        'reserved_count',
+        'total_count',
     ];
+    public $timestamps = false;
 
-    public function spreadSheet(): BelongsTo
+    public function sheet(): BelongsTo
     {
-        return $this->belongsTo('spread_sheets');
+        return $this->belongsTo(Sheet::class);
     }
 
     protected function casts(): array
     {
         return [
-            'created_at' => 'date:d-m-Y',
-            'updated_at' => 'datetime:H:00 d-m-Y',
+            'status' => SpreadSheetRowStatus::class,
         ];
     }
 
@@ -41,6 +44,6 @@ class Row extends Model
     #[Scope]
     protected function allowed(Builder $query)
     {
-        $query->where('status', SpreadSheetLineStatus::Allowed->value);
+        $query->where('status', SpreadSheetRowStatus::Allowed->value);
     }
 }

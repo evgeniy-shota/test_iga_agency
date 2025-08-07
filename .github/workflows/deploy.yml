@@ -1,0 +1,106 @@
+name: Deploy 
+on:
+  workflow_dispatch:  
+  push:
+    branches:
+      - 'master'
+    paths:
+      - "src/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          sparse-checkout: |
+            src
+
+      - name: Change env file
+        run: |
+          mv .env.example .env
+          # App env
+          sed -i -r 's/APP_ENV=[A-Za-z]+/APP_ENV=production/g' .env
+          sed -i 's/APP_DEBUG=true/APP_DEBUG=false/g' .env
+          sed -i -r 's|APP_URL=[A-Za-z0-9:\/\.-]+|APP_URL="${{vars.APP_URL}}"|g' .env
+          # DB env
+          sed -i -r 's/DB_HOST=[a-z0-9\.]+/DB_HOST=${{secrets.DB_HOST}}/g' .env
+          sed -i -r 's/DB_PORT=[0-9]{2,4}:[0-9]{2,4}/DB_PORT=${{secrets.DB_PORT}}/g' .env
+          sed -i -r 's/DB_DATABASE=[A-Za-z0-9_-]+/DB_DATABASE=${{secrets.DB_NAME}}/g' .env
+          sed -i -r 's/DB_USERNAME=[A-Za-z0-9_-]+/DB_USERNAME=${{secrets.DB_USER}}/g' .env
+          sed -i -r 's/DB_PASSWORD=[A-Za-z0-9_!\.,-]+/DB_PASSWORD=${{secrets.DB_PASSWORD}}/g' .env
+
+        working-directory: ./src
+
+      - name: Setup php
+        uses: shivammathur/setup-php@2.34.1
+        with:
+          php-version: '8.4'
+          extensions: pdo, pdo_pgsql     
+          
+      - name: Setup nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+
+      - name: Install nodejs dependencies
+        run: |
+          npm install
+          npm run build
+        working-directory: ./src      
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest
+        working-directory: ./src
+        
+      - name: Prepare Laravel
+        run: |
+          php artisan config:clear 
+          #php artisan cache:clear
+          #php artisan key:generate
+          #php artisan storage:link
+        working-directory: ./src
+
+      - name: SCP Command to Transfer Files
+        uses: appleboy/scp-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_DEPLOY }}          
+          password: ${{ secrets.SERVER_PASSWORD }}      
+          overwrite: true 
+          source: "src"
+          target: "~/test-ira-agency"
+      
+      - name: SSH actions
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          port: ${{ secrets.SERVER_PORT }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_DEPLOY }}
+          password: ${{ secrets.SERVER_PASSWORD }}
+          script: |
+            # Copy
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S rsync -l -r test-ira-agency/ /var/www/test-ira-agency/
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S rm -rf test-ira-agency
+            echo ${{secrets.SERVER_PASSWROD}} | sudo -S chown -R ${{secrets.SERVER_USERNAME}}:${{secrets.SERVER_USERNAME}} /var/www/test-ira-agency
+            cd /var/www/test-ira-agency
+            # directory permission
+            echo ${{secrets.SERVER_PASSWROD}} | sudo -S chmod -R 775 storage
+            echo ${{secrets.SERVER_PASSWROD}} | sudo -S chmod -R 775 bootstrap/cache
+            # artisan commands
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan key:generate
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan storage:link
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan migrate --force
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan config:clear
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan cache:clear
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan optimize
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan app:init-default-thumbnail
+            # supervisor
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl reread
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl update
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl reload
+            echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl start "laravel-worker:*"

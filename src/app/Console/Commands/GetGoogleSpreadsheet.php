@@ -6,18 +6,33 @@ use App\Actions\ParseGoogleSpreadSheetUrl;
 use App\Actions\ReadCredentials;
 use App\Actions\ValidateGoogleSpreadsheetUrl;
 use App\Enums\SpreadSheetLineStatus;
+use App\Models\SpreadsheetUnderObservation;
+use App\Models\User;
 use App\Services\GoogleApiClientService;
 use App\Services\GoogleSheetsService;
+use App\Services\GoogleSpreadsheetWorkerService;
+use App\Services\SpreadSheetService;
+use Google\Service\AndroidProvisioningPartner\GoogleWorkspaceAccount;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Auth;
 
 class GetGoogleSpreadsheet extends Command
 {
+    public function __construct(
+        protected GoogleSpreadsheetWorkerService $gSpreadsheetWorkerService,
+        protected SpreadSheetService $spreadSheetService
+    ) {
+        parent::__construct();
+    }
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:get-google-spreadsheet {--spreadsheetUrl= : Url to Google spreadsheet}
+    protected $signature = 'app:get-google-spreadsheet 
+    {--spreadsheetUrl= : Url to Google spreadsheet}
+    {--spreadSId= : Spreadsheet id}
+    {--userEmail= : Email used for registration}
     {count? : number of output lines in console}';
 
     /**
@@ -34,61 +49,85 @@ class GetGoogleSpreadsheet extends Command
     {
         $count = $this->argument('count');
         $spreadsheetUrl = $this->option('spreadsheetUrl');
+        $spreadSId = $this->option('spreadSId');
+        $userEmail = $this->option('userEmail');
 
-        if ($spreadsheetUrl && !ValidateGoogleSpreadsheetUrl::validate($spreadsheetUrl)) {
-            $this->error('Url to Google spreadsheet is invalid.');
+        if ($spreadsheetUrl) {
+            if (!ValidateGoogleSpreadsheetUrl::validate($spreadsheetUrl)) {
+                $this->error('Url to Google spreadsheet is invalid.');
+                return;
+            }
+        } else {
+            $userId = Auth::id();
+
+            if (
+                isset($userId)
+                || (isset($userEmail)
+                    && $userId = User::where('email', $userEmail)->first()->id)
+            ) {
+                $spreadsheets = SpreadsheetUnderObservation::where('user_id', $userId)
+                    ->orderByAccess(false)->get();
+
+                if (count($spreadsheets) == 0) {
+                    $this->error('No tables found');
+                    return;
+                }
+
+                $spreadsheet = $this->spreadSheetService->get($spreadsheets[0]->spread_sheet_id, $userId);
+            } else if (isset($spreadSId)) {
+                $spreadsheet = $this->spreadSheetService->get($spreadSId);
+            }
+
+            if (!isset($spreadsheet)) {
+                $this->error('No tables found');
+                $this->info('For try to getting Google spreadsheet: ');
+                $this->info('Use this command with option \'--spreadsheetUrl\'=url_to_your_shreapsheet');
+                $this->info('Or use this command with option \'--spreadSId\'=spread_sheet_id');
+                $this->info('Also you can use this command with option \'--userEmail\'=email_used_for_registration');
+                return;
+            }
+
+            $spreadsheetUrl = $spreadsheet->url;
+        }
+
+        $spreadsheet = $this->getTable($spreadsheetUrl);
+
+        if (!$spreadsheet) {
+            $this->error('Something went wrong...The table may not be available.');
+            return;
+        }
+        if (!isset($spreadsheet['data'])) {
+            $this->info('Sheet is empty');
             return;
         }
 
-        dump(SpreadSheetLineStatus::getValues());
-        // $link = "https://docs.google.com/spreadsheets/d/1KEwADgmA0v2MdRoL1UHMx7B1MQkfejVUY3dzD0DP2xQ/edit?usp=sharing";
-        // $link2 = "https://docs.google.com/spreadsheets/d/1KEwADgmA0v2MdRoL1UHMx7B1MQkfejVUY3dzD0DP2xQ/edit?gid=0#gid=0";
-        $link = 'https://docs.google.com/spreadsheets/d/1KEwADgmA0v2MdRoL1UHMx7B1MQkfejVUY3dzD0DP2xQ/edit?gid=1115166090#gid=1115166090';
-        // $link = 'https://docs.google.com/spreadsheets/d/1KEwADgmA0v2MdRoL1UHMx7B1MQkfejVUY3dzD0DP2xQ/edit?gid=817861958#gid=817861958';
+        $rows = $spreadsheet['data']['values'] ?? [];
 
-        $data = $this->getTable($spreadsheetUrl ?? $link);
+        $size = $count && $count < count($rows)
+            ? $count
+            : count($rows);
 
-        // $progressBar = $this->withProgressBar(count($data), function ($item) {
-        //     dump($item);
-        // });
-
-        $progressbar = $this->output->createProgressBar(count($data));
-
+        $progressbar = $this->output->createProgressBar($size);
         $progressbar->start();
-        // $this->output->progressStart(count($data));
 
-        foreach ($data as $item) {
-            sleep(0.1);
-            // echo "\033[F\033[K]";
-            // $this->output->write("\r" . $item[0] . " - " . $item[1], true);
-            $this->info($item[0] . " - " . $item[1]);
-            $progressbar->advance();
+        for ($i = 0, $size = $size; $i < $size; $i++) {
             $this->line('');
+            // echo "\033[F\033[K]";
+            // $this->info("\033[F\033[K]");
+            $comment = isset($rows[$i][7]) ? $rows[$i][7] : '_______';
+            $this->line("id: " . $rows[$i][0] . ' --- Comment:' . $comment);
+            $progressbar->advance();
         }
-
         $progressbar->finish();
     }
 
     public function getTable(string $spreadsheetUrl)
     {
-        $googleSpreadSheetIds = ParseGoogleSpreadSheetUrl::parse($spreadsheetUrl);
-
-        $credentials = json_decode(ReadCredentials::read(), true);
-        $apiClient = new GoogleApiClientService($credentials);
-        $sheetsService = new GoogleSheetsService($apiClient->client);
-        $sheetsService->getSpreadsheet(
-            $googleSpreadSheetIds['spreadsheetId'],
-            ['gid' => $googleSpreadSheetIds['sheetId']]
+        $spreadsheet = $this->gSpreadsheetWorkerService->getSpreadsheet(
+            $spreadsheetUrl,
+            parseValue: false
         );
-        $sheetsService->getSheets();
 
-        $sheetTitle = $sheetsService
-            ->getSheetTitleBySheetId($googleSpreadSheetIds['sheetId']);
-
-        $sheetsService->getSpreadsheetValues(
-            $googleSpreadSheetIds['spreadsheetId'],
-            $sheetTitle
-        );
-        dd();
+        return $spreadsheet;
     }
 }

@@ -7,6 +7,7 @@ import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/vue3';
 import { BookOpen, Folder, LayoutGrid } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
+import { computed } from 'vue';
 
 const mainNavItems: NavItem[] = [
     {
@@ -19,15 +20,34 @@ const mainNavItems: NavItem[] = [
 const footerNavItems: NavItem[] = [
     {
         title: 'Github Repo',
-        href: 'https://github.com/laravel/vue-starter-kit',
+        href: 'https://github.com/evgeniy-shota/test_iga_agency',
         icon: Folder,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#vue',
-        icon: BookOpen,
-    },
+    }
+    // {
+    //     title: 'Documentation',
+    //     href: 'https://laravel.com/docs/starter-kits#vue',
+    //     icon: BookOpen,
+    // },
 ];
+
+interface Props {
+    spreadsheets?: object;
+}
+
+const props = defineProps<Props>();
+
+const spreadsheetsLinkData = computed(() => {
+    let data: Array<object> = [];
+    console.log(props.spreadsheets)
+
+    for (let spreadheet of props.spreadsheets) {
+        spreadheet.href = route('dashboard.show', spreadheet.id)
+        spreadheet.title = spreadheet.title ?? spreadheet.url
+        data.push(spreadheet);
+    }
+
+    return data;
+})
 </script>
 
 <template>
@@ -37,7 +57,7 @@ const footerNavItems: NavItem[] = [
                 <SidebarMenuItem>
                     <SidebarMenuButton size="lg" as-child>
                         <Link :href="route('dashboard')">
-                            <AppLogo />
+                        <AppLogo />
                         </Link>
                     </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -46,6 +66,7 @@ const footerNavItems: NavItem[] = [
 
         <SidebarContent>
             <NavMain :items="mainNavItems" />
+            <NavMain v-if="props.spreadsheets" :items="spreadsheetsLinkData" />
         </SidebarContent>
 
         <SidebarFooter>

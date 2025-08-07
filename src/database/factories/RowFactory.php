@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Enums\SpreadSheetLineStatus;
+use App\Enums\SpreadSheetRowStatus;
 use App\Models\SpreadSheet;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -25,11 +25,15 @@ class RowFactory extends Factory
             $columns['Col ' . fake()->text(5)] = fake()->word();
         }
 
+        $reservedCount = fake()->numberBetween(0, 999);
+
         return [
             'spread_sheets_id' => SpreadSheet::inRandomOrder()->first() ?? SpreadSheet::factory(),
             'user_id' => User::inRandomOrder()->first(),
-            'status' => fake()->randomElement(SpreadSheetLineStatus::getValues()),
-            'columns' => json_encode($columns),
+            'status' => fake()->randomElement(SpreadSheetRowStatus::getValues()),
+            'name' => fake()->word(),
+            'reserved_count' => fake()->numberBetween(0, 999),
+            'total_count' => fake()->numberBetween($reservedCount, 1999),
         ];
     }
 }
