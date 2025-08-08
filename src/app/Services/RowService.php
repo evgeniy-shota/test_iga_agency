@@ -113,7 +113,7 @@ class RowService
 
         for ($i = 0, $size = count($data); $i < $size; $i++) {
             $rows[$i]['sheet_id'] = $sheetId;
-            $rows[$i]['row_number'] = $data[$i]['row_number'] ?? ++$lastRowNumber;
+            $rows[$i]['row_number'] = ++$lastRowNumber;
             $rows[$i]['status'] = $data[$i]['status'] ?? SpreadSheetRowStatus::Allowed;
             $rows[$i]['name'] = $data[$i]['name'] ?? null;
             $rows[$i]['reserved_count'] = $data[$i]['reserved_count'] ?? null;

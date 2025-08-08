@@ -15,7 +15,8 @@ Route::get('/', function () {
 Route::controller(DashboardController::class)->group(function () {
     Route::get('/dashboard', 'index')->middleware(['auth'])
         ->name('dashboard');
-    Route::get('/dashboard/{id}', 'show')->middleware(['auth'])
+    Route::get('/dashboard/{id}', 'show')->whereNumber('id')
+        ->middleware(['auth'])
         ->name('dashboard.show');
 });
 
