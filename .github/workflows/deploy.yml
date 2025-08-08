@@ -87,7 +87,7 @@ jobs:
             echo ${{secrets.SERVER_PASSWORD}} | sudo -S rsync -l -r ~/test-ira-agency/src /var/www/test-ira-agency/
             echo ${{secrets.SERVER_PASSWORD}} | sudo -S rm -rf test-ira-agency
             echo ${{secrets.SERVER_PASSWROD}} | sudo -S chown -R ${{secrets.SERVER_USERNAME}}:${{secrets.SERVER_USERNAME}} /var/www/test-ira-agency
-            cd /var/www/test-ira-agency/
+            cd /var/www/test-ira-agency/src
             # directory permission
             echo ${{secrets.SERVER_PASSWROD}} | sudo -S chmod -R 775 storage
             echo ${{secrets.SERVER_PASSWROD}} | sudo -S chmod -R 775 bootstrap/cache
