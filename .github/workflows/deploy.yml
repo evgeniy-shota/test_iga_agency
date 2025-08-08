@@ -99,7 +99,7 @@ jobs:
             echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan cache:clear
             echo ${{secrets.SERVER_PASSWORD}} | sudo -S php artisan optimize
             # supervisor
-            echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl reread
+            #echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl reread
             echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl update
-            echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl reload
+            #echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl reload
             echo ${{secrets.SERVER_PASSWORD}} | sudo -S supervisorctl start "laravel-worker:*"
