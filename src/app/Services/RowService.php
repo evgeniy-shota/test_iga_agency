@@ -191,6 +191,7 @@ class RowService
                         $sheet->sheet_id,
                         $insertRowNum,
                         $insertRowNum,
+                        endColumnIndex: count($row->toArray()) - 1
                     );
                 $actionType = SpreadsheetActionType::Insert;
             } else {
@@ -199,10 +200,11 @@ class RowService
                     $sheet->id
                 );
                 $requestData = $this->pGoogleSheetRequestService
-                    ->prepareDeleteRows(
+                    ->prepareDeleteRange(
                         $sheet->sheet_id,
                         $deleteRowNum,
                         $deleteRowNum,
+                        endColumnIndex: count($row->toArray()) - 1
                     );
                 $actionType = SpreadsheetActionType::Delete;
             }
@@ -263,15 +265,15 @@ class RowService
         $spreadsheet = $sheet->spreadsheet;
         $rowNumber = $row->row_number;
         $rowStatus = $row->status;
-        $result = $row->delete($id);
-        $decrRowNumRows = $this->changeRowNumber($sheet->id, $rowNumber);
 
         if ($rowStatus->value !== SpreadSheetRowStatus::Prohibited->value) {
+            $deleteRowNum = $this->findIndxInAllowed($row->id, $sheet->id);
             $requestData = $this->pGoogleSheetRequestService
-                ->prepareDeleteRows(
+                ->prepareDeleteRange(
                     $sheet->sheet_id,
-                    $rowNumber,
-                    $rowNumber
+                    $deleteRowNum,
+                    $deleteRowNum,
+                    endColumnIndex: count($row->toArray()) - 1
                 );
             $result = $this->sActionService->createAction(
                 $spreadsheet->id,
@@ -284,6 +286,8 @@ class RowService
             $spreadsheet->id,
             $userId
         );
+        $result = $row->delete($id);
+        $this->changeRowNumber($sheet->id, $rowNumber);
 
         return $result;
     }

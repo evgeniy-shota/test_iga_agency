@@ -70,29 +70,6 @@ class PrepareGoogleSheetRequestService
     }
 
     /**
-     * Request data for update row on sheet
-     * @param int $sheetId sheet_id from sheets db
-     */
-    // public function prepareUpdateRow(Row $row, int $sheetId)
-    // {
-    //     // $collection = collect($row);
-    //     $requests = PrepareRowsDataToUpdate::prepare([$row], $sheetId);
-
-    //     return $requests;
-    // }
-
-    /**
-     * Request data for update rows on sheet
-     * @param int $sheetId sheet_id from sheets db
-     */
-    // public function prepareUpdateRows(array $rows, int $sheetId)
-    // {
-    //     $requests = PrepareRowsDataToUpdate::prepare($rows, $sheetId);
-
-    //     return $requests;
-    // }
-
-    /**
      * Request data for update sheets
      */
     public function prepareUpdateSheets(Collection $sheets)
@@ -117,6 +94,41 @@ class PrepareGoogleSheetRequestService
                     // 'endRowIndex' => '',
                 ],
                 'fields' => '*',
+            ]
+        ];
+
+        return $requests;
+    }
+
+    /**
+     * Request data for delete range on sheet
+     */
+    public function prepareDeleteRange(
+        int $sheetId,
+        int $startRowNum,
+        null|int $endRowNum = null,
+        int $startColumnIndex = 0,
+        null|int $endColumnIndex = null,
+    ): array {
+
+        $range = [
+            "sheetId" => $sheetId,
+            "startRowIndex" => $startRowNum - 1,
+            "startColumnIndex" => $startColumnIndex,
+        ];
+
+        if (isset($endRowNum)) {
+            $range = array_merge($range, ["endRowIndex" => $endRowNum]);
+        }
+
+        if (isset($endColumnIndex)) {
+            $range = array_merge($range, ["endColumnIndex" => $endColumnIndex]);
+        }
+
+        $requests = [
+            'deleteRange' => [
+                'range' => $range,
+                'shiftDimension' => 'ROWS',
             ]
         ];
 

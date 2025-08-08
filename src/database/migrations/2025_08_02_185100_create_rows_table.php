@@ -18,8 +18,8 @@ return new class extends Migration
             $table->integer('row_number');
             $table->enum('status', SpreadSheetRowStatus::getValues());
             $table->string('name')->nullable();
-            $table->integer('reserved_count')->nullable()->default(0);
-            $table->integer('total_count')->nullable()->default(0);
+            $table->bigInteger('reserved_count')->nullable()->default(0);
+            $table->bigInteger('total_count')->nullable()->default(0);
         });
     }
 
