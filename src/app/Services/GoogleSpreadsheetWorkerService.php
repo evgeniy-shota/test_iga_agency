@@ -71,9 +71,7 @@ class GoogleSpreadsheetWorkerService
     public function updateSpreadsheet(string $spreadsheetUrl, array $data)
     {
         $sheetsService = $this->prepareSheetService($spreadsheetUrl);
-
         $result = $sheetsService->updateRows($data);
-
         return $result;
     }
 

@@ -35,7 +35,7 @@ class SynchronizeSpreadsheet
             dump('empty');
             return true;
         }
-        dump('~~~~~~ update spreadsheet ~~~~~~~');
+        // dump('~~~~~~ update spreadsheet ~~~~~~~');
         $result = $this->gSsheetWorkerService->updateSpreadsheet2(
             $spreadsheet->url,
             $actionsRequest
