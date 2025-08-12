@@ -155,118 +155,11 @@ class GoogleSheetsService
         return false;
     }
 
-    public function clearSheet(string $range)
-    {
-
-        $clear = new ClearValuesRequest();
-        try {
-            $response = $this->service->spreadsheets_values
-                ->clear($this->spreadsheet()['spreadsheetId'], $range, $clear);
-        } catch (Exception $e) {
-            dd($e);
-            return false;
-        }
-
-        return true;
-    }
-
     /**
-     * Append rows in range
-     * @param string $range example 'Лист1'!A1:Z1000
+     * Sends batchUpdate request to Google Api
+     * @param array $requests
      * @return bool
      */
-    public function addRows(array $data, string $range)
-    {
-        if (!isset($this->spreadsheet)) {
-            throw new Exception('The spreadsheet is not seted');
-        }
-
-        if (strlen($range) == 0) {
-            throw new Exception('The range is empty');
-        }
-
-        $value = new ValueRange();
-
-        try {
-            $result = $this->service->spreadsheets_values->append(
-                $this->spreadsheet->spreadsheetId,
-                $range,
-                $value
-            );
-        } catch (\Google\Service\Exception $e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    public function appendDimensionRows(int $sheetId, int $number = 1000)
-    {
-        $requests = [
-            'appendDimension' => [
-                "sheetId" => $sheetId,
-                "dimension" => 'ROWS',
-                "length" => $number
-            ]
-
-        ];
-
-        $response = $this->batchUpdateRequest($requests);
-        return $response;
-    }
-
-    /**
-     * Update rows in ranges
-     */
-    public function updateRows(array $data)
-    {
-        if (!isset($this->spreadsheet)) {
-            throw new Exception('The spreadsheet is not seted');
-        }
-
-        if (count($data) == 0) {
-            throw new Exception('The data is empty');
-        }
-
-        $result = $this->batchUpdateRequest($data);
-
-        return $result;
-    }
-
-    public function deleteRows(int $sheetId, int $startRowNum, string|int $endRowNum = '')
-    {
-        if (!isset($this->spreadsheet)) {
-            throw new Exception('The spreadsheet is not seted');
-        }
-
-        if (!isset($startRowNum)) {
-            throw new Exception('The startRowNum is null');
-        }
-
-        if ($startRowNum < 0) {
-            throw new Exception('The startRowNum cannot be less than zero');
-        }
-
-        if (isset($endRowNum) && $startRowNum > $endRowNum) {
-            throw new Exception('The startRowNum cannot be gros that endRowNum');
-        }
-
-        $requests = [
-            'deleteDimension' => [
-                'range' => [
-                    'sheetId' => $sheetId,
-                    'dimension' => 'ROWS',
-                    'startIndex' => $startRowNum - 1,
-                    'endIndex' => $endRowNum,
-                ]
-            ]
-        ];
-
-        $result = $this->batchUpdateRequest($requests);
-
-        return $result;
-    }
-
     public function batchUpdateRequest(array $requests): bool
     {
         $batchUpdateRequest = new BatchUpdateSpreadsheetRequest(
@@ -279,7 +172,6 @@ class GoogleSheetsService
                 $batchUpdateRequest
             );
         } catch (\Google\Service\Exception $e) {
-            dd($e);
             return false;
         }
         return true;

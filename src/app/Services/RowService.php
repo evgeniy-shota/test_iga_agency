@@ -45,7 +45,7 @@ class RowService
 
     /**
      * @param int $id Row id
-     * @return use App\Models\Row;
+     * @return App\Models\Row;
      */
     public function get(int $id): Row
     {
@@ -55,6 +55,9 @@ class RowService
 
     /**
      * Create row
+     * @param int $sheetId
+     * @param array $data
+     * @param int $userId
      */
     public function create(int $sheetId, array $data, int $userId)
     {
